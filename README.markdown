@@ -9,18 +9,21 @@ All methods described in the Disqus API documentation are available here. More i
 
 	$this->disqus->get_forum_list(USER_API_KEY);
 
+
 I've added a few methods for displaying your actual Disqus threads:
 
-The js_params() method will spit out a a script block with all the params set as global JavaScript params.  See the [documentation](http://wiki.disqus.net/JSEmbed/)
+The *js_params()* method will spit out a script block with all the params set as global JavaScript params.  See the [documentation](http://wiki.disqus.net/JSEmbed/)
 
 	echo $this->disqus->js_params(array('disqus_developer'=>'1', 'disqus_url'=>base_url().'blog/post/'.$post->shortname));
 
-The display_thread() method will display the script to pull in the thread for the current request.
+
+The *display_thread()* method will display the script to pull in the thread for the current request.
 
 	echo $this->disqus->display_thread();
 
 
-I've also added methods to make things a bit simpler.  So far, there is only one: get_post_count_by_url()
+I've also added methods to make things a bit simpler.  So far, there is only one: 
+*get_post_count_by_url()*
 
 	$this->get_post_count_by_url('http://myblog.com/url/post/');
 
