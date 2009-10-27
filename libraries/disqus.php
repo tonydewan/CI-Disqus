@@ -19,8 +19,11 @@
 class disqus {
 	
 	public $forum_id  = '';
+	public $forum_shortname = '';
 	public $user_api_key  = NULL;
 	public $forum_api_key = NULL;
+	
+	public $js_params = array();
 	
 	protected $api_base = 'http://disqus.com/api/';
 	
@@ -58,8 +61,78 @@ class disqus {
 
 		log_message('debug', 'Disqus: library configured.');
 	}
-	
 
+	// display methods
+	// ------------------------------------------------------------
+	
+	/** 
+	* Display the thread (via the standard Disqus JS integration)
+	* @access	public
+	* @param	array of params (will overwrite values from config value)
+	* @return   String of comment count on success
+	*/	
+	public function display_thread($disqus_container_id = NULL)
+	{
+		$id = ($disqus_container_id) ? $disqus_container_id : ($this->js_params['disqus_container_id']) ? $this->js_params['disqus_container_id'] : 'disqus_thread';
+
+		$out = '<div id="'.$id.'"></div>';
+		$out .= '<script type="text/javascript" src="http://disqus.com/forums/'.$this->forum_shortname.'/embed.js"></script>';
+		$out .= '<noscript><a href="http://disqus.com/forums/'.$this->forum_shortname.'/?url=ref">View the discussion thread.</a></noscript>';
+		
+		return $out;
+	}
+
+	/** 
+	* Display a script block with JS params
+	* @access	public
+	* @param	array of params (will overwrite values from config value)
+	* @return   String of comment count on success
+	*/	
+	public function js_params($params = NULL)
+	{
+		if($params){
+			array_merge($this->js_params, $params);
+		}
+		
+		if( !empty($this->js_params) ){
+			
+			$out = '<script type="text/javascript">';
+			foreach ($this->js_params as $key => $value)
+			{
+				$out .= 'var '.$key.' = "'.$value.'";';
+			}
+			return $out . '</script>';
+			
+		}
+		
+	}
+	
+	// Simple Methods
+	// ------------------------------------------------------------
+
+	/** 
+	* Get Post Count by URL
+	* @access	public
+	* @param	URL to get the comments for
+	* @return   String of comment count on success, FALSE on failure
+	*/
+	public function get_post_count_by_url($url)
+	{
+		$forum = $this->get_thread_by_url(NULL, $url);
+		
+		if(!$forum){
+			log_message('error', 'Disqus: the url "'.$url.'" does reference a disqus thread.');
+			return FALSE;
+		}
+		
+		return $forum->num_comments;
+	}
+
+
+
+	// API Methods
+	// ------------------------------------------------------------
+	
 	/** 
 	* Create Post
 	* @access	public
@@ -135,7 +208,7 @@ class disqus {
 	*/
 	public function get_thread_list($forum_key = NULL)
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 				
 		return $this->_request('GET', 'get_thread_list', $params);
 	}
@@ -150,7 +223,7 @@ class disqus {
 	*/
 	public function get_num_posts($forum_key = NULL, $thread_ids = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_ids'] = $thread_ids;
 				
 		return $this->_request('GET', 'get_num_posts', $params);
@@ -166,7 +239,7 @@ class disqus {
 	*/
 	public function get_thread_by_url($forum_key = NULL, $url = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['url'] = $url;
 				
 		return $this->_request('GET', 'get_thread_by_url', $params);
@@ -182,7 +255,7 @@ class disqus {
 	*/
 	public function get_thread_posts($forum_key = NULL, $thread_id = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_id'] = $thread_id;
 				
 		return $this->_request('GET', 'get_thread_posts', $params);
@@ -198,7 +271,7 @@ class disqus {
 	*/
 	public function thread_by_identifier($forum_key = NULL, $title = '', $identifier = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['title'] = $title;
 		$params['identifier'] = $identifier;
 				
@@ -219,7 +292,7 @@ class disqus {
 	*/
 	public function update_thread($forum_key = NULL, $thread_id = '', $title = NULL, $slug = NULL, $url = NULL, $allow_comments = NULL)
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
+		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_id'] = $thread_id;
 
 		if($title) $params['title'] = $title;
@@ -252,16 +325,14 @@ class disqus {
 			case 'GET':
 			case 'get':
 			
-				$param_string = '?';
+				$param_string = '/?';
 
 				foreach ($params as $key => $value)
 				{
-					$param_string .= $key.'='.$value;
-					if (!end($test) == $value) $param_string .= '&';
+					$param_string .= $key.'='.$value.'&';
 				}
 
-				$result = $this->CI->curl->simple_get($this->api_base.$method.$param_string);				
-			
+				$result = $this->CI->curl->simple_get($this->api_base.$method.$param_string);
 			break;
 			
 			case 'POST':
@@ -274,7 +345,7 @@ class disqus {
 		endswitch;
 		
 		$result = json_decode($result);
-		
+
 		if($result->succeeded == FALSE):
 		
 			log_message('error', 'Disqus: API request for "'.$method.'" failed with this message :'.$result->message);
