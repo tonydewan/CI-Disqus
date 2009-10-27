@@ -13,12 +13,12 @@
  * @version		0.1
  * @license		http://www.opensource.org/licenses/bsd-license.php BSD licensed.
  *
+ * @todo		Write testing controller
  * @todo		Add some methods that simplify interaction with the API, rather than just mirroring it
  */
 class disqus {
 	
-	public $forum_id = '';
-	public $forum_key = NULL;
+	public $forum_id  = '';
 	public $user_api_key  = NULL;
 	public $forum_api_key = NULL;
 	
@@ -135,7 +135,7 @@ class disqus {
 	*/
 	public function get_thread_list($forum_key = NULL)
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 				
 		return $this->_request('GET', 'get_thread_list', $params);
 	}
@@ -150,7 +150,7 @@ class disqus {
 	*/
 	public function get_num_posts($forum_key = NULL, $thread_ids = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_ids'] = $thread_ids;
 				
 		return $this->_request('GET', 'get_num_posts', $params);
@@ -166,7 +166,7 @@ class disqus {
 	*/
 	public function get_thread_by_url($forum_key = NULL, $url = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['url'] = $url;
 				
 		return $this->_request('GET', 'get_thread_by_url', $params);
@@ -182,7 +182,7 @@ class disqus {
 	*/
 	public function get_thread_posts($forum_key = NULL, $thread_id = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_id'] = $thread_id;
 				
 		return $this->_request('GET', 'get_thread_posts', $params);
@@ -198,7 +198,7 @@ class disqus {
 	*/
 	public function thread_by_identifier($forum_key = NULL, $title = '', $identifier = '')
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['title'] = $title;
 		$params['identifier'] = $identifier;
 				
@@ -219,7 +219,7 @@ class disqus {
 	*/
 	public function update_thread($forum_key = NULL, $thread_id = '', $title = NULL, $slug = NULL, $url = NULL, $allow_comments = NULL)
 	{
-		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_key;
+		$params['forum_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['thread_id'] = $thread_id;
 
 		if($title) $params['title'] = $title;

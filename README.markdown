@@ -12,11 +12,10 @@ More info about the [Disqus API](http://wiki.disqus.net/API)
 	$this->disqus->get_forum_list(USER_API_KEY);
 
 You can also pass an array of values to the config method to make then globally available.  Appropriate
-ones include: forum_id, forum_key, user_api_key, forum_api_key
+ones include: forum_id, user_api_key, forum_api_key
 
 	$this->disqus->config(array(
 		'forum_id' => $forum_id,
-		'forum_key' => $forum_key,
 		'user_api_key' => $user_api_key,
 		'forum_api_key' => $forum_api_key
 	));
