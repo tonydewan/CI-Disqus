@@ -71,16 +71,17 @@ class disqus {
 	* @param	array of params (will overwrite values from config value)
 	* @return   String of comment count on success
 	*/	
-	public function display_thread($disqus_container_id = NULL)
+	public function display_thread($container = NULL)
 	{
-		$id = ($disqus_container_id) ? $disqus_container_id : ($this->js_params['disqus_container_id']) ? $this->js_params['disqus_container_id'] : 'disqus_thread';
 
+		$id = ($container) ? $container : ( isset($this->js_params['disqus_container_id']) ? $this->js_params['disqus_container_id'] : 'disqus_thread ' );
 		$out = '<div id="'.$id.'"></div>';
 		$out .= '<script type="text/javascript" src="http://disqus.com/forums/'.$this->forum_shortname.'/embed.js"></script>';
 		$out .= '<noscript><a href="http://disqus.com/forums/'.$this->forum_shortname.'/?url=ref">View the discussion thread.</a></noscript>';
 		
 		return $out;
 	}
+
 
 	/** 
 	* Display a script block with JS params
@@ -91,15 +92,15 @@ class disqus {
 	public function js_params($params = NULL)
 	{
 		if($params){
-			array_merge($this->js_params, $params);
+			$this->js_params = array_merge($this->js_params, $params);
 		}
-		
+
 		if( !empty($this->js_params) ){
 			
 			$out = '<script type="text/javascript">';
 			foreach ($this->js_params as $key => $value)
 			{
-				$out .= 'var '.$key.' = "'.$value.'";';
+				$out .= "var $key = '$value';";
 			}
 			return $out . '</script>';
 			
@@ -109,6 +110,7 @@ class disqus {
 	
 	// Simple Methods
 	// ------------------------------------------------------------
+
 
 	/** 
 	* Get Post Count by URL
@@ -121,13 +123,12 @@ class disqus {
 		$forum = $this->get_thread_by_url(NULL, $url);
 		
 		if(!$forum){
-			log_message('error', 'Disqus: the url "'.$url.'" does reference a disqus thread.');
+			log_message('error', 'Disqus: the url "'.$url.'" does not reference a disqus thread.');
 			return FALSE;
 		}
 		
 		return $forum->num_comments;
 	}
-
 
 
 	// API Methods
@@ -169,6 +170,7 @@ class disqus {
 	
 		return $this->_request('POST', 'create_post', $params);
 	}
+
 	
 	/** 
 	* Get Forum List
