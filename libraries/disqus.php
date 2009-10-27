@@ -17,7 +17,7 @@
  */
 class disqus {
 	
-	public $forum_id = '213016';
+	public $forum_id = '';
 	public $forum_key = NULL;
 	public $user_api_key  = NULL;
 	public $forum_api_key = NULL;

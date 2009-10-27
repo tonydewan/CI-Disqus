@@ -25,4 +25,4 @@ ones include: forum_id, forum_key, user_api_key, forum_api_key
 Requirements:
 -------------
 
-Requires CodeIgniter-cURL by [philsturgeon](http://github.com/philsturgeon/codeigniter-curl)
+Requires [CodeIgniter-cURL](http://github.com/philsturgeon/codeigniter-curl) by [philsturgeon](http://github.com/philsturgeon)
