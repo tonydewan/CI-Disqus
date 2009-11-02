@@ -3,18 +3,17 @@
  * Disqus
  * A Simple Library to Manage interacting with the Disqus API
  * 
- * Requires the cURL library by Philip Sturgeon [http://codeigniter.com/wiki/Curl_library/]
+ * Requires the cURL library by Philip Sturgeon [http://github.com/philsturgeon]
  * See the official API documentation for methods and response formats: http://wiki.disqus.net/API
  *
  * @package		CodeIgniter
  * @subpackage	Libraries
  * @category	API Interaction
  * @author		Tony Dewan <tonydewan.com/contact>	
- * @version		0.1
+ * @version		1.00
  * @license		http://www.opensource.org/licenses/bsd-license.php BSD licensed.
  *
- * @todo		Write testing controller
- * @todo		Add some methods that simplify interaction with the API, rather than just mirroring it
+ * @todo		Finish writing testing controller
  */
 class disqus {
 	
@@ -113,9 +112,30 @@ class disqus {
 
 
 	/** 
+	* Get Post Count by Indentifier (Note that due to how the API is written, this will create a new thread if the identifier is new)
+	* @access	public
+	* @param	identifier to get the comment thread
+	* @return   String of comment count on success, FALSE on failure
+	*/
+	public function get_post_count_by_identifier($identifier)
+	{
+		$forum = $this->thread_by_identifier(NULL, $identifier);
+
+		if(!$forum){
+			log_message('error', 'Disqus: the identifier "'.$identifier.'" does not reference a disqus thread.');
+			return FALSE;
+		}
+
+		$id = $forum->thread->id;
+		$posts = $this->get_num_posts(NULL, $id);
+
+		return $posts->{$id}[0];
+	}
+
+	/** 
 	* Get Post Count by URL
 	* @access	public
-	* @param	URL to get the comments for
+	* @param	URL of the thread to get the comments for
 	* @return   String of comment count on success, FALSE on failure
 	*/
 	public function get_post_count_by_url($url)
@@ -126,8 +146,12 @@ class disqus {
 			log_message('error', 'Disqus: the url "'.$url.'" does not reference a disqus thread.');
 			return FALSE;
 		}
-		
-		return $forum->num_comments;
+
+		$id = $forum->id;
+		// return $forum->num_comments; //currently undocumented in the API, so probably not good to rely on
+		$posts = $this->get_num_posts(NULL, $id);
+
+		return $posts->{$id}[0];
 	}
 
 
@@ -147,12 +171,14 @@ class disqus {
 	* @param	String of the ip_address OPTIONAL
 	* @return   The post object just created on success, FALSE on failure.
 	*/
-	public function create_post($thread_id, $message, $author_name, $author_email, $parent_post = NULL, $created_at = NULL, $author_url = NULL, $ip_address = NULL)
+	public function create_post($forum_key = NULL, $thread_id, $message, $author_name, $author_email, $parent_post = NULL, $created_at = NULL, $author_url = NULL, $ip_address = NULL)
 	{
 		// you can pass an array of options instead
 		if( is_array($thread_id) ){
 			$params = $thread_id;
 		}else{
+			
+			$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 			
 			$params = array(
 				'thread_id' => $thread_id,
@@ -178,9 +204,9 @@ class disqus {
 	* @param	String of the users API key. Defaults to the global user_api_key value
 	* @return   A list of objects representing all forums the user owns on success or FALSE on failure
 	*/	
-	public function get_forum_list($user_api_key = NULL)
+	public function get_forum_list($user_key = NULL)
 	{
-		$params['user_api_key'] = ($user_api_key) ? $user_api_key : $this->user_api_key;
+		$params['user_api_key'] = ($user_key) ? $user_key : $this->user_api_key;
 				
 		return $this->_request('GET', 'get_forum_list', $params);
 	}
@@ -193,9 +219,9 @@ class disqus {
 	* @param	String of the forum_id. Defaults to the global forum_id value
 	* @return   String of API Key or FALSE
 	*/
-	public function get_forum_api_key($user_api_key = NULL, $forum_id = NULL)
+	public function get_forum_api_key($user_key = NULL, $forum_id = NULL)
 	{
-		$params['user_api_key'] = ($user_api_key) ? $user_api_key : $this->user_api_key;
+		$params['user_api_key'] = ($user_key) ? $user_key : $this->user_api_key;
 		$params['forum_id'] = ($forum_id) ? $forum_id : $this->forum_id;
 				
 		return $this->_request('GET', 'get_forum_api_key', $params);
@@ -211,7 +237,7 @@ class disqus {
 	public function get_thread_list($forum_key = NULL)
 	{
 		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
-				
+
 		return $this->_request('GET', 'get_thread_list', $params);
 	}
 
@@ -269,9 +295,10 @@ class disqus {
 	* @access	public
 	* @param	String of the forum API key. Defaults to the global forum_key value
 	* @param	String of the thread ID
+	* @param	String title of the thread to possibly be created
 	* @return   An object with two keys [thread,created], otherwise FALSE
 	*/
-	public function thread_by_identifier($forum_key = NULL, $title = '', $identifier = '')
+	public function thread_by_identifier($forum_key = NULL, $identifier = '', $title = '')
 	{
 		$params['forum_api_key'] = ($forum_key) ? $forum_key : $this->forum_api_key;
 		$params['title'] = $title;
@@ -313,19 +340,18 @@ class disqus {
 	* @param	String of the request type
 	* @param	String of the method name
 	* @param	array of params
-	* @return   FALSE on empty call and when library is already loaded, TRUE when library loaded
+	* @return   Decoded result object on success, FALSE on error
 	*/	
 	private function _request($type = 'GET', $method = NULL, $params = NULL)
 	{
 		
-		if(!$method || !$params) return false;
+		if(!$type || !$method || !$params) return false;
 		
 		$this->_load('curl');
 		
-		switch($type):
+		switch(strtoupper($type)):
 			
 			case 'GET':
-			case 'get':
 			
 				$param_string = '/?';
 
@@ -335,23 +361,26 @@ class disqus {
 				}
 
 				$result = $this->CI->curl->simple_get($this->api_base.$method.$param_string);
+				
 			break;
 			
 			case 'POST':
-			case 'post':
-			
-				$result = $this->CI->curl->simple_post($this->api_base.$method, $params);
-			
+
+				$result = $this->CI->curl->simple_post($this->api_base.$method.'/', $params);
+
 			break;
 		
 		endswitch;
-		
-		$result = json_decode($result);
 
+		//return $this->CI->curl->debug();
+		$result = json_decode($result);
+		
+		if(!$result || $result == NULL) return FALSE;
+		
 		if($result->succeeded == FALSE):
 		
 			log_message('error', 'Disqus: API request for "'.$method.'" failed with this message :'.$result->message);
-			return false;
+			return FALSE;
 			
 		else:
 		
@@ -363,7 +392,7 @@ class disqus {
 
 	/** 
 	* Function used to prevent multiple load calls for the same CI library
-	* Originally from Carabiner.
+	* Originally from Carabiner. Not really necessary, just keeps your logs cleaner.
 	* @access	protected
 	* @param	String library name
 	* @return   FALSE on empty call and when library is already loaded, TRUE when library loaded
